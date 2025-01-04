@@ -1,0 +1,143 @@
+Security Group : 1000 - 11000 , 80 , 500 - 1000 , 443 , 22
+
+Server : Ubuntu 24.04 , t2.medium , storage : 20
+
+sudo apt udpate
+
+AWS CLI :
+sudo apt install unzip -y
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+aws configure (ap-south-1)
+
+sudo snap install terraform --classic
+
+update the key_pair in git -> cluster -> varibles.tf -> default
+if ur selecting the different region -> change region and availability_zone in main.tf
+
+git clone url
+cd blue-green
+ls
+terraform init 
+terraform plan
+terraform apply --auto-approve
+
+Jenkins , Sonarqube, Nexus
+Ubuntu 24.04 , t2.medium , Storage : 25 GB
+
+Jenkins :
+sudo apt update
+java
+install java17 headless
+jenkins (google) -> select ubuntu installation steps LTS and enable jenkins cmd
+ip:8080
+install docker (google search) -> follow steps for ubuntu
+sudo usermod -aG docker jenkins
+ip:8080/restart
+Install trivy (google search) -> follow the steps for trivy
+sudo snap install kubectl --classic
+
+Nexus :
+sudo apt update
+docker
+sudo apt install docker.io -y
+sudo usermod -aG docker ubuntu # need to relogin or restart instance to take effect . so nect cmd
+newgrp docker
+docker run -d -p 8081:8081 sonatype/nexus3
+ip:8081 (nexus)
+docker ps 
+docker exec -it container_id /bin/bash
+ls
+cd sonatype-work/
+ls
+cd nexus3
+cat admin.password
+enable anonymous
+
+
+Sonarqube :
+sudo apt update
+docker
+sudo apt install docker.io -y
+sudo usermod -aG docker $USER # need to relogin or restart instance to take effect . so nect cmd
+newgrp docker
+docker run -d -p 9000:9000 sonarqube:lts-community
+docker ps
+ip:9000(sonarqube)
+
+Server :
+sudo snap install kubectl --classic
+kubectl get nodes (fails)
+aws eks --region ap-south-1 update-kubeconfig --name devopsshack-cluster
+kubectl get nodes
+
+https://github.com/Shabbirsyed05/Blue-Green-Deployment/blob/main/Setup-RBAC.md
+
+vi sa.yaml
+kubectl create ns webapps
+kubectl apply -f sa.yaml
+
+vi role.yaml
+kubectl apply -f role.yaml
+vi rolebind.yaml
+kubectl apply -f rolebind.yaml
+
+vi sec.yaml
+
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: mysecretname
+  annotations:
+    kubernetes.io/service-account.name: jenkins
+
+kubectl apply -f sec.yaml -n webapps
+kubectl describe secret mysecretname -n webapps (copy token)
+jenkins webpage -> Manage jenkins -> Credentials -> system -> Global credetials =>
+kind (secret text) , secret (paste the token) , ID (k8-token)
+
+Plugins :
+Sonarqube Scanner
+Config File Provider
+Maven Integration , Pipeline Maven Integration
+Pipeline: Stage View
+Docker pipeline
+Kubernetes , Kubernetes CLI , Kubernetes Credentials , Kubernetes Client API
+
+New Item -> Blue-Green (pipeline) =>
+Discard Old Build -> Max builds to keep (2)
+
+Manage Jenkins -> Security -> Credentials -> global =>
+kind (username and password) , username (docker_username) , password (docker_token/pass) , iD (docker-cred)
+kind (username and password) , username (git_username) , password (git_token/pass) , iD (git-cred)
+
+Tools Configuration in Jenkins :
+SoanrQube Scanner Installation => name (sonar-scanner) , version (latest version : 6.2.0.4610)
+Maven => name (maven3) -> install automatically (from apache)
+
+SonarQube configuration in Jenkins
+Before configuring SonarQube in jenkins , we need to generate a SoanrQube token to establish a connection b/w jenkins and SonarQube.
+Goto SonarQube console console => Administrator(top pane) -> 'Security' drop down -> users -> 3 dots -> Generate token (name : jenkins)
+ 
+Manage Jenkins -> Security -> Credentials -> global =>
+kind (secret text) , secret (sonarqube_token) , id (sonar-token)
+kind (username and password) , username (docker_username) , password (docker_token/pass) , iD (docker)
+
+System Configuration in Jenkins
+Manage Jenkins -> System -> SonarQube Server =>
+name (sonar-server) , url (https://sonar:9000) , server authentication token (sonar-token (from dropdown))
+
+Manage jenkins -> Manage file -> Global Maven settings(tick) , ID (maven-settings) ->
+Modify the contenct of maven release and maven snapshot
+
+eks -> cluster -> devopsshack-cluster -> API server endpoint -> copy and paste it in pipeline url
+
+run the jenkins job with the pipeline
+
+server :
+kubectl get all -n webapps (copy external ip)
+green green switch
+kubectl get all -n webapps 
